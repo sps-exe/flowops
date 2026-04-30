@@ -1,0 +1,16 @@
+{
+  "short_name": "OneFlow",
+  "name": "OneFlow — MSME Business App",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#1A5276",
+  "background_color": "#F4F6F8"
+}
