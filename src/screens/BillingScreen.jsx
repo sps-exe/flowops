@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { Search, Plus, Minus, X, Check, Zap, Trash2, UserPlus, ChevronRight } from 'lucide-react';
 import { useAppContext } from '../store/AppContext';
-import { QUICK_ITEMS } from '../data/mockData';
 import { hapticFeedback } from '../utils/haptics';
 import useBarcodeScanner from '../hooks/useBarcodeScanner';
 import useBluetoothPrinter from '../hooks/useBluetoothPrinter';
@@ -140,7 +139,10 @@ export default function BillingScreen({ onNavigate, onRushMode, showToast }) {
   });
 
   // ─── Product Lists ────────────────────────────────────────────────────────
-  const quickItems = QUICK_ITEMS.map(id => products.find(p => p.id === id)).filter(Boolean);
+  const quickItems = [...products]
+    .sort((a, b) => (b.soldToday || 0) - (a.soldToday || 0))
+    .slice(0, 6);
+
   const filteredProducts = searchQuery.length > 1
     ? products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : [];
