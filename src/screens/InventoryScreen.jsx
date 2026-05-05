@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Search, Filter, Plus, X, MessageCircle, Download } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Plus, X, MessageCircle, Download, Edit3 } from 'lucide-react';
 import { useAppContext } from '../store/AppContext';
 import { hapticFeedback } from '../utils/haptics';
 import { exportToCSV } from '../utils/csvUtils';
@@ -212,8 +212,16 @@ function AddStockModal({ product, suppliers, businessLocation, onClose, onSave, 
   );
 }
 
-function AddItemModal({ onClose, onSave }) {
-  const [form, setForm] = useState({
+function ItemModal({ onClose, onSave, initialData }) {
+  const [form, setForm] = useState(initialData ? {
+    name: initialData.name || '',
+    category: initialData.category || 'General',
+    costPrice: initialData.costPrice || '',
+    price: initialData.price || '',
+    stock: initialData.stock || '',
+    unit: initialData.unit || 'pcs',
+    minStock: initialData.minStock?.toString() || '5',
+  } : {
     name: '',
     category: 'General',
     costPrice: '',
@@ -230,6 +238,7 @@ function AddItemModal({ onClose, onSave }) {
     if (!form.price || Number(form.price) < 0) return;
 
     onSave({
+      ...(initialData ? { id: initialData.id, barcode: initialData.barcode } : {}),
       name: form.name.trim(),
       category: form.category.trim() || 'General',
       costPrice: Number(form.costPrice || 0),
@@ -246,7 +255,7 @@ function AddItemModal({ onClose, onSave }) {
       <div className="bg-white w-full rounded-t-[32px] px-6 pt-6 pb-10 shadow-2xl animate-slide-in">
         <div className="w-12 h-1.5 bg-surface-200 rounded-full mx-auto mb-6" />
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-black text-navy text-[22px] tracking-tight">Create Inventory Item</h3>
+          <h3 className="font-black text-navy text-[22px] tracking-tight">{initialData ? 'Edit Item' : 'Create Inventory Item'}</h3>
           <button onClick={onClose} className="w-10 h-10 bg-surface-100 rounded-full flex items-center justify-center active:scale-95 transition-transform text-slate-500 border border-surface-200">
             <X size={20} strokeWidth={2.5} />
           </button>
@@ -346,12 +355,13 @@ function AddItemModal({ onClose, onSave }) {
 }
 
 export default function InventoryScreen({ onBack, initialFilter }) {
-  const { state, updateStock, addProduct, addSupplier } = useAppContext();
+  const { state, updateStock, addProduct, updateProduct, addSupplier } = useAppContext();
   const { products, suppliers = [], business } = state;
   const [filter, setFilter] = useState(initialFilter || 'all');
   const [search, setSearch] = useState('');
   const [addStockModal, setAddStockModal] = useState(null);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [editItemModal, setEditItemModal] = useState(null);
   const [shakingId, setShakingId] = useState(null);
 
   const handleExport = () => {
@@ -359,28 +369,19 @@ export default function InventoryScreen({ onBack, initialFilter }) {
     exportToCSV(products, 'flowops_inventory.csv');
   };
 
-  const handleCreateItem = (itemData) => {
-    const maxNumericId = products.reduce((max, p) => {
-      const n = Number(p.id);
-      return Number.isFinite(n) ? Math.max(max, n) : max;
-    }, 0);
-
+  const handleCreateItem = (item) => {
     const newItem = normalizeProduct({
-      id: maxNumericId + 1,
-      name: itemData.name,
-      category: itemData.category,
-      costPrice: itemData.costPrice,
-      price: itemData.price,
-      stock: itemData.stock,
-      unit: itemData.unit,
-      minStock: itemData.minStock,
-      lastSold: '-',
-      soldToday: 0,
-      supplierId: suppliers[0]?.id || null,
+      ...item,
+      id: 'ITM' + Date.now().toString().slice(-6),
       barcode: String(Date.now()),
     });
 
     addProduct(newItem);
+    hapticFeedback.success();
+  };
+
+  const handleUpdateItem = (item) => {
+    updateProduct(item.id, item);
     hapticFeedback.success();
   };
 
@@ -424,9 +425,16 @@ export default function InventoryScreen({ onBack, initialFilter }) {
         />
       )}
       {showAddItemModal && (
-        <AddItemModal
+        <ItemModal
           onClose={() => setShowAddItemModal(false)}
           onSave={handleCreateItem}
+        />
+      )}
+      {editItemModal && (
+        <ItemModal
+          initialData={editItemModal}
+          onClose={() => setEditItemModal(null)}
+          onSave={handleUpdateItem}
         />
       )}
 
@@ -570,13 +578,21 @@ export default function InventoryScreen({ onBack, initialFilter }) {
                      <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-0.5">Sold today</p>
                      <p className="text-navy font-black text-2xl tracking-tight">{product.soldToday}</p>
                   </div>
-                  <button
-                    onClick={() => setAddStockModal(product.id)}
-                    className="flex items-center gap-1.5 bg-navy text-white text-[13px] px-4 py-2.5 rounded-[16px] font-bold active:scale-[0.96] transition-transform shadow-md shadow-navy/20 mt-4"
-                  >
-                    <Plus size={14} strokeWidth={3} />
-                    Add Stock
-                  </button>
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={() => setEditItemModal(product)}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-surface-100 text-slate-500 text-[13px] px-2 py-2.5 rounded-[16px] font-bold active:scale-[0.96] transition-transform"
+                    >
+                      <Edit3 size={14} strokeWidth={2.5} />
+                    </button>
+                    <button
+                      onClick={() => setAddStockModal(product.id)}
+                      className="flex-[4] flex items-center justify-center gap-1.5 bg-navy text-white text-[13px] px-4 py-2.5 rounded-[16px] font-bold active:scale-[0.96] transition-transform shadow-md shadow-navy/20"
+                    >
+                      <Plus size={14} strokeWidth={3} />
+                      Add Stock
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

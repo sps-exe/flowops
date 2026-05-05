@@ -729,6 +729,22 @@ export function AppProvider({ children, user }) {
     }
   };
 
+  const updateProduct = (productId, updates) => {
+    setState(prev => {
+      const nextProducts = prev.products.map(p => {
+        if (p.id === productId) {
+          const updated = normalizeProduct({ ...p, ...updates });
+          if (user?.uid) {
+            void syncProductToCloud(user.uid, updated);
+          }
+          return updated;
+        }
+        return p;
+      });
+      return { ...prev, products: nextProducts };
+    });
+  };
+
   const addSupplier = (supplier) => {
     const normalizedSupplier = normalizeSupplier({
       id: `S${Date.now()}`,
@@ -858,6 +874,7 @@ export function AppProvider({ children, user }) {
         removeManualEntry,
         importProducts,
         addProduct,
+        updateProduct,
         addSupplier,
         addCustomer,
         settleKhata,
