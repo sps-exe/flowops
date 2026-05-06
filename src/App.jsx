@@ -161,13 +161,20 @@ export default function App() {
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
-        const nextUser = {
-          uid: currentUser.uid,
-          storeName: currentUser.displayName || 'My OneFlow Store',
-          email: currentUser.email,
-        };
-        setUser(nextUser);
-        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(nextUser));
+        setUser(prev => {
+          // Prevent race condition on registration where updateProfile hasn't finished
+          const currentStoreName = prev?.storeName && prev.storeName !== 'My OneFlow Store' ? prev.storeName : null;
+          const newStoreName = currentUser.displayName || currentStoreName || 'My OneFlow Store';
+          
+          const nextUser = {
+            uid: currentUser.uid,
+            storeName: newStoreName,
+            email: currentUser.email,
+          };
+          localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(nextUser));
+          return nextUser;
+        });
+        
         const hasOnboarded = localStorage.getItem(`flowops_onboarded_${currentUser.uid}`);
         setOnboarded(!!hasOnboarded);
       } else {

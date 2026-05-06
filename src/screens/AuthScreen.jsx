@@ -271,15 +271,17 @@ export default function AuthScreen({ onLoginSuccess }) {
               {!loading && <ArrowRight size={20} />}
             </button>
             
-            <div className="mt-6 flex justify-center">
-              <button 
-                type="button"
-                onClick={handleSandboxLogin}
-                className="text-xs text-slate-400 font-medium active:scale-95 transition-transform hover:text-slate-600 px-4 py-2"
-              >
-                {copy.sandbox}
-              </button>
-            </div>
+            {!isFirebaseConfigured && (
+              <div className="mt-6 flex justify-center">
+                <button 
+                  type="button"
+                  onClick={handleSandboxLogin}
+                  className="text-xs text-slate-400 font-medium active:scale-95 transition-transform hover:text-slate-600 px-4 py-2"
+                >
+                  {copy.sandbox}
+                </button>
+              </div>
+            )}
           </div>
         </form>
       </div>
